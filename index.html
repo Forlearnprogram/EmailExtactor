@@ -1,0 +1,413 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<link rel="shortcut icon" type="image/x-icon" href="https://static.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico">
+<title>Email Extractor Lite</title>
+<script language="javascript" type="text/javascript">
+<!-- Begin
+
+
+function copy() {
+	textRange = document.extractor.output.createTextRange();
+	textRange.execCommand("RemoveFormat");
+	textRange.execCommand("Copy");
+}
+
+function paste() {
+	textRange = document.extractor.input.createTextRange();
+	textRange.execCommand("RemoveFormat");
+	textRange.execCommand("Paste");
+}
+
+function help(){
+
+	var imgwid = 450;
+	var imghgt = 360;
+
+	content = ('<html><head><title>Email Extractor Lite : Help</title>');
+	content += ('<style type="text/css">');
+	content += ('body,td,th,ul,p       { font: normal normal normal 8pt/1em Verdana; color: #000; }');
+	content += ('</style>');
+	content += ('</head><body onload="window.focus();">');
+	content += ('<strong>Quick and dirty</strong>');
+	content += ('<ol>');
+	content += ('<li>Copy all text from any webpages, documents, files, etc...</li>');
+	content += ('<li>Paste it into <strong>Input Window</strong>.</li>');
+	content += ('<li>Click "<em>Extract</em>" button.</li>');
+	content += ('<li>Copy the result from <strong>Output Window</strong> to somewhere and save it.</li>');
+	content += ('<li>Click "<em>Reset</em>" button to start all over again.</li>');
+	content += ('</ol>');
+	content += ('<br /><br /><strong>More Controls</strong>');
+	content += ('<ol>');
+	content += ('<li>Click "<em>Paste Input</em>" link to paste any text you copied elsewhere into <strong>Input Window</strong>.</li>');
+	content += ('<li>Click "<em>Copy Output</em>" link to copy whatever text inside <strong>Output Window</strong>.</li>');
+	content += ('<li>Choose different separator from the dropdown menu or specify your own. Default is comma.</li>');
+	content += ('<li>You can group a number of emails together. Each group is separated by a new line. Please enter number only.</li>');
+	content += ('<li>Check "<em>Sort Alphabetically</em>" checkbox to arrange extracted emails well... alphabetically.</li>');
+	content += ('<li>You can extract or exclude emails containing certain string (text). Useful if you only want to get email from a particular domain.</li>');
+	content += ('<li>You can choose to extract web addresses instead of email addresses.</li>');
+	content += ('</ol>');
+	content += ('<div align="center"><input type="button" value="Close" onClick="javascript:window.close();" /></div>');
+	content += ('</body></html>');
+
+	var winl = (screen.width - imgwid) / 2;
+	var wint = (screen.height - imghgt) / 2;
+	helpwindow = window.open('','help','width=' + imgwid + ',height=' + imghgt + ',resizable=0,scrollbars=0,top=' + wint + ',left=' + winl + ',toolbar=0,location=0,directories=0,status=0,menubar=0,copyhistory=0');
+	helpwindow.document.write(content);
+	helpwindow.document.close();
+}
+
+function checksep(value){
+	if (value) document.extractor.sep.value = "other";
+}
+
+function numonly(value){
+	if (isNaN(value)) {
+		window.alert("Please enter a number or else \nleave blank for no grouping.");
+		document.extractor.groupby.focus();
+	}
+}
+
+function findEmail() {
+	var email = "none";
+	var a = 0;
+	var ingroup = 0;
+	var separator = document.extractor.sep.value;
+	var string = document.extractor.string.value;
+	var groupby = Math.round(document.extractor.groupby.value);
+	var address_type = document.extractor.address_type.value;
+	var input = document.extractor.input.value;
+
+	if (document.extractor.lowcase.checked) {
+		var input = input.toLowerCase();
+	}
+
+	if (separator == "new") separator = "\n";
+	if (separator == "other") separator = document.extractor.othersep.value;
+
+	if (address_type == "web") {
+		rawemail = input.match(/([A-Za-z]+:\/\/[A-Za-z0-9-_]+\.[A-Za-z0-9-_%&\?\/.=]+)/gi);
+	} else {
+		rawemail = input.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+	}
+
+	var norepeat = new Array();
+	var filtermail = new Array();
+	if (rawemail) {
+		if (string){
+			x = 0;
+			for (var y=0; y<rawemail.length; y++) {
+				if (document.extractor.filter_type.value == 1) {
+					if (rawemail[y].search(string) >= 0) {
+						filtermail[x] = rawemail[y];
+						x++;
+					}
+				} else {
+					if (rawemail[y].search(string) < 0) {
+						filtermail[x] = rawemail[y];
+						x++;
+					}
+				}
+			}
+			rawemail = filtermail;
+		}
+
+		for (var i=0; i<rawemail.length; i++) {
+			var repeat = 0;
+
+			// Check for repeated emails routine
+			for (var j=i+1; j<rawemail.length; j++) {
+				if (rawemail[i] == rawemail[j]) {
+					repeat++;
+				}
+			}
+
+			// Create new array for non-repeated emails
+			if (repeat == 0) {
+				norepeat[a] = rawemail[i];
+				a++;
+			}
+		}
+		if (document.extractor.sort.checked) norepeat = norepeat.sort(); // Sort the array
+		email = "";
+		// Join emails together with separator
+		for (var k = 0; k < norepeat.length; k++) {
+			if (ingroup != 0) email += separator;
+			email += norepeat[k];
+			ingroup++;
+
+			// Group emails if a number is specified in form. Each group will be separate by new line.
+			if (groupby) {
+				if (ingroup == groupby) {
+					email += '\n\n';
+					ingroup = 0;
+				}
+			}
+		}
+	}
+
+	// Return array length
+	var count = norepeat.length;
+
+	// Print results
+	document.extractor.count.value = count;
+	document.extractor.output.value = email;
+}
+//  End -->
+</script>
+<style type="text/css" media="screen">
+body {
+	margin: 0;
+	background: #ccf;
+	text-align: center;
+	font-family: Arial, sans-serif;
+	font-size: 11px;
+	color: #aa7d4f;
+	}
+
+body,td,th,ul,p {
+	font: normal normal normal 8pt/1em Verdana;
+	color: #000;
+	}
+
+textarea,input,select {
+	font: normal normal normal 8pt/1em Verdana;
+	color: #000;
+	background:#FFF;
+	}
+
+a:link, a:visited {
+	text-decoration: none;
+	color: #059;
+	}
+
+a:active, a:hover {
+	text-decoration: underline;
+	color: #D14;
+	}
+
+fieldset {
+	padding-left: 10px;
+	padding-bottom: 10px;
+	border:1px solid #999;
+	}
+
+legend {
+	font: normal normal bold 9pt Arial;
+	color: #333;
+	}
+
+.bordercolor {
+	background:#fed;
+	}
+
+.maincolor {
+	background:#ccf;
+	border:1px solid #007;
+	}
+
+.button {
+	background:#ccf;
+	}
+
+.titlebarcolor {
+	background:#007;
+	}
+
+.titlefont {
+	font: normal normal bold 9pt/1em Arial;
+	color: #FFF;
+	text-decoration:none;
+	}
+
+.copyrightfont, .copyrightfont a {
+	font: normal normal bold 9pt/1em Arial;
+	color: #FFF;
+	text-decoration:none;
+	}
+
+</style>
+</head>
+
+<body>
+
+<div align="center">
+	<form name="extractor" action="https://github.com/MrSpeedNeily/email-extractor#" method="get">
+		<table class="maincolor" cellpadding="4" cellspacing="0" border="0" width="600">
+			<tbody><tr class="titlebarcolor" valign="middle">
+				<td align="left" class="titlefont">
+					Email Extractor SPEEDVERSATION</td>
+				<td align="right" class="copyrightfont">
+					<!-- Please do not remove or modify the copyright notice. This is all I ask for in return -->
+					Copyright � <a href="https://www.instagram.com/rifatneily/" title="Neily Web Hosting" target="_blank">SPEED</a></td>
+			</tr>
+			<tr>
+				<td valign="top" align="center" width="50%">
+					<strong>Input Window</strong><br>
+					<textarea name="input" rows="8" cols="25" style="width:98%"></textarea></td>
+				<td valign="top" align="center" width="50%">
+					<strong>Output Window</strong><br>
+					<textarea name="output" rows="8" cols="25" style="width:98%" readonly="readonly"></textarea></td>
+			</tr>
+			<tr>
+				<td valign="top" align="center">
+
+					<script language="javascript" type="text/javascript">
+					<!--
+					if ((navigator.appName=="Microsoft Internet Explorer")&&(parseInt(navigator.appVersion)>=4)) document.write('<a href="#" onClick="paste();">Paste Input</a>');
+					else document.write('Paste your input in above textarea');
+					// -->
+					</script>Paste your input in above textarea</td>
+				<td valign="top" align="center">
+
+					<script language="javascript" type="text/javascript">
+					<!--
+					if ((navigator.appName=="Microsoft Internet Explorer")&&(parseInt(navigator.appVersion)>=4)) document.write('<a href="#" onClick="copy();">Copy Output</a>');
+					else document.write('Your output will be displayed in above textarea');
+					// -->
+					</script>Your output will be displayed in above textarea</td>
+			</tr>
+			<tr>
+				<td valign="top" align="left" colspan="2" style="border-bottom:1px solid #999999;">
+				</td>
+			</tr>
+			<tr>
+				<td valign="top" align="left">
+					<br>
+					<input type="button" class="button" value="Extract" onclick="findEmail();">
+					<input type="reset" class="button" value="Reset">&nbsp;&nbsp;&nbsp;
+					<a href="https://www.youtube.com/channel/UCsGt_r9BXRmJgx9alVfCclg?view_as=subscriber" onclick="help();"><em>Need help?</em></a></td>
+				<td valign="top" align="right" nowrap="nowrap">
+					<br>
+					No. of addresses detected: <input name="count" size="5" readonly="readonly"></td>
+			</tr>
+			<tr>
+				<td valign="top" align="left" colspan="2">
+					<fieldset title="Output Option">
+						<legend align="left"><strong>Output Option</strong></legend>
+						<br>
+						Separator:
+						<select name="sep">
+						<option value=", " selected="selected">Comma</option>
+						<option value="|">Pipe</option>
+						<option value=" : ">Colon</option>
+						<option value="new">New Line</option>
+						<option value="other">Other</option>
+						</select>
+						<input type="text" name="othersep" size="3" onblur="checksep(this.value);">
+						&nbsp;
+						<label for="sortbox"><input type="checkbox" name="sort" id="sortbox">Sort Alphabetically</label>
+						&nbsp;
+						<label for="casebox"><input type="checkbox" name="lowcase" id="casebox" checked="checked">To Lowercase?</label>
+						<br><br>
+						Group: <input type="text" size="3" name="groupby" onblur="numonly(this.value);"> Addresses <small>(groups will be seperated by new paragraph)</small>
+					</fieldset>
+					<br>
+					<fieldset title="Filter Option">
+						<legend align="left"><strong>Filter Option</strong></legend>
+						<br>
+						<select name="filter_type">
+							<option value="1" selected="selected">Only</option>
+							<option value="0">Do not</option>
+						</select>
+						extract address containing this string: <input type="text" size="20" name="string">
+						<br>
+						<br>
+						Type of address to extract:
+						<select name="address_type">
+							<option value="email" selected="selected">Email</option>
+							<option value="web">URL</option>
+						</select>
+					</fieldset>
+					<br>
+					<div align="right">
+						<a href="https://github.com/MrSpeedNeily/email-extractor" title="SPEED Web Hosting" target="_blank"><strong>Get latest version</strong></a>
+					</div></td>
+			</tr>
+		</tbody></table>
+	</form>
+	<!-- //// All we ask in return for this free tool is NOT to remove this link. Thank you. -->
+	<p>Click here for <a href="https://twitter.com/rifatneily" title="SPEED Web Hosting" target="_blank">Web design by SPEED</a></p>
+</div>
+<script>
+  window.console = window.console || function(t) {};
+</script>
+<script>
+  if (document.location.search.match(/type=embed/gi)) {
+    window.parent.postMessage("resize", "*");
+  }
+</script>
+</head>
+<body translate="no">
+
+
+<div class="box-circle-transform"></div>
+<style>
+body {padding:4em; }
+
+.wrap {width:200px; margin:auto;  z-index:1;}
+
+.msg {
+  color: whitesmoke;
+  text-align:center;
+  font-family: 'Bree Serif', Courier, monospaced;
+  font-size:3.5em;
+  width:200px;
+  position:absolute;
+  margin:55px 0 0 2px;
+  pointer-events: none;
+}
+
+.sticker {
+  width:200px;
+  height:200px;
+  position:absolute;
+  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/13034/sticker.png) top center no-repeat;
+  animation: spin 10s linear infinite;
+  /*Set our animation play state to paused initially */
+  animation-play-state: paused;
+}
+
+.sticker:hover {
+  /* Toggle our animation play state to running when we are hovering over our sticker */
+  animation-play-state: running;
+}
+
+
+@keyframes spin {
+  100% {transform: rotate(1turn); }
+}
+</style>
+<script>
+  window.console = window.console || function(t) {};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prefixfree/1.0.7/prefixfree.min.js"></script>
+<script>
+  if (document.location.search.match(/type=embed/gi)) {
+    window.parent.postMessage("resize", "*");
+  }
+</script>
+</head>
+<body translate="no">
+<style media="" data-href="https://fonts.googleapis.com/css?family=Bree+Serif">/* latin-ext */
+@font-face {
+  font-family: 'Bree Serif';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Bree Serif Regular'), local('BreeSerif-Regular'), url(https://fonts.gstatic.com/s/breeserif/v9/4UaHrEJCrhhnVA3DgluA96Tp56N1.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Bree Serif';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Bree Serif Regular'), local('BreeSerif-Regular'), url(https://fonts.gstatic.com/s/breeserif/v9/4UaHrEJCrhhnVA3DgluA96rp5w.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<div class="wrap">
+<div class="sticker"></div>
+<div class="msg">new!</div>
+</div>
+
+</body></html>
